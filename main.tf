@@ -17,6 +17,7 @@ provider "aws" {
 #   }
 # }
 
+
 resource "aws_security_group" "sonarqube_sg" {
   name        = "sonarqube_security_group"
   description = "Allow SonarQube and SSH Traffic"
@@ -73,13 +74,19 @@ data "aws_ami" "amazon_linux" {
   owners = ["amazon"]
 }
 
+data "aws_subnets" "all" {
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]   #forces subnets from the same VPC
+  }
+}
 
 resource "aws_instance" "sonarqube" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = "t2.large"
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.sonarqube_sg.id]
-  #subnet_id              = var.subnet_id  # or an existing subnet ID
+  subnet_id              = data.aws_subnets.all.ids[0]  # or an existing subnet ID
   user_data              = file("install_sonarqube.sh")
 
   tags = {
